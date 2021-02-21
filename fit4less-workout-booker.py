@@ -69,8 +69,8 @@ class Account():
         for time in alltimes_elements:
             clock = time.get_attribute("data-slottime")[3::]
             time_id = time.get_attribute("id")
-            index_of_colon=clock.find(':')
-            index_of_space=clock.find(' ')
+            index_of_colon = clock.find(':')
+            index_of_space = clock.find(' ')
             hour, minute = 0, 0
             hour += int(clock[:index_of_colon])
             minute = int(clock[index_of_colon+1:index_of_space])
@@ -110,13 +110,11 @@ class Account():
                 print("Incorrect location, try again")
                 return 0
 
-
-
             # 5) Select Day: Ex: Tomorrow. Check todays date, select tomorrows date (Maximum of 3 days in advance)
             # driver.find_element_by_id('btn_date_select').click()
             today = datetime.date.today()
-            tomorrow = today + datetime.timedelta(days = 1)
-            dayaftertomorrow = today + datetime.timedelta(days = 2)
+            tomorrow = today + datetime.timedelta(days=1)
+            dayaftertomorrow = today + datetime.timedelta(days=2)
             days = [dayaftertomorrow.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")]  # Book 3 days in advance
 
             for i in days:
@@ -136,7 +134,7 @@ class Account():
 
                 booked = self.bookTime(driver)
                 if booked != 0:
-                    self.timesbooked[i]=booked
+                    self.timesbooked[i] = booked
 
         except Exception as e:
             pass
@@ -146,35 +144,12 @@ class Account():
         return 1
 
     def getReserved(self, driver):
-        try:
-            if not self.login(driver):
-                return 0
-            alltimes_elements = driver.find_elements_by_xpath("/html/body/div[5]/div/div/div/div/form/div/div")
-            for i in alltimes_elements:
-                if i.get_attribute('data-slotdate') is None:  # Very hack-ish, fix
-                    return 0
-                print('-', i.get_attribute('data-slotdate'), i.get_attribute('data-slotclub'), i.get_attribute('data-slottime'))
-            return 1
-
-        except Exception as e:
-            pass
-            # print(e)
-            # print("Something went wrong, check inputs")
-
-    def getLocations(self, driver):
-        try:
-            if not self.login(driver):
-                return 0
-            selectclub_element = scrollTo(driver, driver.find_element_by_id('btn_club_select'))
-            selectclub_element.click()
-            clubs = driver.find_elements_by_xpath("/html/body/div[3]/div/div/div[2]/div/div")
-
-            for i in clubs:
-                print(i.text.replace(" ", '-'))
-
-        except Exception as e:
-            print(e)
-            print("Something went wrong, check inputs")
+        if not self.login(driver):
+            print("Failed to login")
+            return
+        alltimes_elements = driver.find_elements_by_css_selector(".reserved-slots > .time-slot")
+        for i in alltimes_elements:
+            print('-', i.get_attribute('data-slotdate'), i.get_attribute('data-slotclub'), i.get_attribute('data-slottime'))
 
 
 if __name__ == '__main__':
@@ -198,8 +173,6 @@ if __name__ == '__main__':
             person.getReserved(driver)
     elif function == 'reserved':
         person.getReserved(driver)
-    elif function == 'locations':
-        person.getLocations(driver)
     else:
         print("Unknown command")
     driver.quit()
