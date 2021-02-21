@@ -117,7 +117,7 @@ class Account():
             today = datetime.date.today()
             tomorrow = today + datetime.timedelta(days = 1)
             dayaftertomorrow = today + datetime.timedelta(days = 2)
-            days = [today.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), dayaftertomorrow.strftime("%Y-%m-%d")] #Book 3 days in advance
+            days = [dayaftertomorrow.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")]  # Book 3 days in advance
 
             for i in days:
                 # print("-------------")
