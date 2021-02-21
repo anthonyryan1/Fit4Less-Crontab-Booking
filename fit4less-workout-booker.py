@@ -98,50 +98,42 @@ class Account():
 
     def book(self, driver, location, minrangetimegym, maxrangetimegym):
         # 1) Enter https://www.fit4less.ca/ > 2) Bookworkout
+        if not self.login(driver):
+            return 0
+        selectclub_element = scrollTo(driver, driver.find_element_by_id('btn_club_select'))
+        selectclub_element.click()
         try:
-            if not self.login(driver):
-                return 0
-            selectclub_element = scrollTo(driver, driver.find_element_by_id('btn_club_select'))
-            selectclub_element.click()
+            location_element = driver.find_element_by_xpath("//div[contains(text(),'{}')]".format(location))
+            location_element.click()
+        except:
+            print("Incorrect location, try again")
+            return 0
+
+        # 5) Select Day: Ex: Tomorrow. Check todays date, select tomorrows date (Maximum of 3 days in advance)
+        # driver.find_element_by_id('btn_date_select').click()
+        today = datetime.date.today()
+        tomorrow = today + datetime.timedelta(days=1)
+        dayaftertomorrow = today + datetime.timedelta(days=2)
+        days = [dayaftertomorrow.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")]  # Book 3 days in advance
+
+        for i in days:
+            # print("-------------")
             try:
-                location_element = driver.find_element_by_xpath("//div[contains(text(),'{}')]".format(location))
-                location_element.click()
+                countbooked = driver.find_element_by_xpath("/html/body/div[5]/div/div/div/div/form/p[3]")
             except:
-                print("Incorrect location, try again")
-                return 0
+                print("Maximum Booked. Booked {} times".format(self.countbooked))
+                return 1
+            self.countbooked = countbooked.text[9]
 
-            # 5) Select Day: Ex: Tomorrow. Check todays date, select tomorrows date (Maximum of 3 days in advance)
-            # driver.find_element_by_id('btn_date_select').click()
-            today = datetime.date.today()
-            tomorrow = today + datetime.timedelta(days=1)
-            dayaftertomorrow = today + datetime.timedelta(days=2)
-            days = [dayaftertomorrow.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")]  # Book 3 days in advance
+            selectday_element = scrollTo(driver, driver.find_element_by_id('btn_date_select'))
+            selectday_element.click()
+            day_element_name = "date_"+i
+            # print("Looking at times for", i)
+            driver.find_element_by_id(day_element_name).click()
 
-            for i in days:
-                # print("-------------")
-                try:
-                    countbooked = driver.find_element_by_xpath("/html/body/div[5]/div/div/div/div/form/p[3]")
-                except:
-                    print("Maximum Booked. Booked {} times".format(self.countbooked))
-                    return 1
-                self.countbooked = countbooked.text[9]
-
-                selectday_element = scrollTo(driver, driver.find_element_by_id('btn_date_select'))
-                selectday_element.click()
-                day_element_name = "date_"+i
-                # print("Looking at times for", i)
-                driver.find_element_by_id(day_element_name).click()
-
-                booked = self.bookTime(driver)
-                if booked != 0:
-                    self.timesbooked[i] = booked
-
-        except Exception as e:
-            pass
-            # print(e)
-            # print("Booked )
-        print(" ")
-        return 1
+            booked = self.bookTime(driver)
+            if booked != 0:
+                self.timesbooked[i] = booked
 
     def getReserved(self, driver):
         if not self.login(driver):
