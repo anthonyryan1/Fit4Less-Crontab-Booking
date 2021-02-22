@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<base href="https://myfit4less.gymmanager.com/portal/booking/index.asp" />
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="/portal/images/fit4less/favicon.ico">
+        <title>Fit4Less</title>
+
+        <!-- page stylesheets -->
+        <link rel="stylesheet" href="/portal/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/portal/css/fit4less/base.css?v=598">
+        <link rel="stylesheet" href="/portal/css/fit4less/booking.css?v=598">
+
+        <!-- Javascript -->
+        <script src="/portal/js/jquery-3.5.1.min.js"></script>
+        <script src="/portal/js/bootstrap.min.js"></script>
+        <script src="/portal/js/menu.js?v=598"></script>
+
+        <script language="javascript" type="text/javascript">
+            $(document).ready(function(){
+                cleanTimeBlockDialog();
+
+                // CLUB & DAY SELECTION
+                $("#btn_club_select").on("click", function(){
+                    $("#modal_clubs").modal("show");
+                });
+                $("#dialog_club_close").on("click", function(){
+                    $("#modal_clubs").modal("hide");
+                });
+                $(".md-option").on("click", function(){
+                    processClubDate(this.id);
+                });
+
+                $("#btn_date_select").on("click", function(){
+                    $("#modal_dates").modal("show");
+                });
+                $("#dialog_date_close").on("click", function(){
+                    $("#modal_dates").modal("hide");
+                });
+
+                // CANCEL & BOOK TRIGGERS
+                $(".reserved-slots > .time-slot").on("click", function(){
+                    processTimeBlock("cancel",this.id);
+                });
+                $(".available-slots > .time-slot").on("click", function(){
+                    processTimeBlock("book",this.id);
+                });
+
+                // MODAL DIALOG TRIGGERS
+                $("#modal_booking").on("hidden.bs.modal", function(e){
+                    cleanTimeBlockDialog();
+                });
+                $("#dialog_book_no,#dialog_cancel_no").on("click", function(){
+                    $("#modal_booking").modal("hide");
+                });
+                $("#dialog_book_yes").on("click", function(){
+                    $("#action").val("booking");
+                    $("#doorPolicyForm").submit();
+                });
+                $("#dialog_cancel_yes").on("click", function(){
+                    $("#action").val("cancel");
+                    $("#doorPolicyForm").submit();
+                });
+            });
+
+            function processClubDate(inputID){
+                var inputType = inputID.slice(0,4);
+                var inputUUID = inputID.slice(5);
+
+                if (inputType=="club") {
+                    $("#action").val("clubchange");
+                    $("#block_id").val(inputUUID);
+                    $("#block_name").val($("#"+inputID).text());
+                }
+                if (inputType=="date") {
+                    $("#action").val("daychange");
+                    $("#block_id").val(inputUUID);
+                }
+                $("#doorPolicyForm").submit();
+            };
+
+            function processTimeBlock(inputAction, inputID){
+                var inputType = inputID.slice(0,4);
+                var inputUUID = inputID.slice(5);
+
+                if (inputUUID){
+                    cleanTimeBlockDialog();
+                    $("#block_id").val(inputUUID);
+                    var blockInfo = $("#" + inputID).data("slotclub") + ", " + $("#" + inputID).data("slotdate") + ", " + $("#" + inputID).data("slottime")
+
+                    switch (inputAction){
+                        case "cancel":
+                            $("#block_name").val(blockInfo);
+                            $("#modal_booking_Label").text("Cancel reservation");
+                            $("#modal_booking_Text").text("Are you sure you want to cancel this reservation?");
+                            $("#choice_club").text($("#" + inputID).data("slotclub"));
+                            $("#choice_date").text($("#" + inputID).data("slotdate"));
+                            $("#choice_time").text($("#" + inputID).data("slottime"));
+                            $("#modal_legaltext").hide();
+                            $(".dialog-buttons-cancel").show();
+                            break;
+
+                        case "book":
+                            $("#block_name").val(blockInfo);
+                            $("#modal_booking_Label").text("Book reservation");
+                            $("#modal_booking_Text").text("Are you sure you want to reserve this timeblock to use the gym?");
+                            $("#choice_club").text($("#" + inputID).data("slotclub"));
+                            $("#choice_date").text($("#" + inputID).data("slotdate"));
+                            $("#choice_time").text($("#" + inputID).data("slottime"));
+                            $("#modal_legaltext").show();
+                            $(".dialog-buttons-book").show();
+                            break;
+                    }
+                    $("#modal_booking").modal("show");
+                }
+            };
+
+            function cleanTimeBlockDialog(){
+                $("#modal_booking_Label").text("");
+                $("#modal_booking_Text").text("");
+
+                $("#choice_club").text("");
+                $("#choice_date").text("");
+                $("#choice_time").text("");
+
+                $(".dialog-buttons-book").hide();
+                $(".dialog-buttons-cancel").hide();
+
+                $("#action").val("");
+                $("#block_id").val("");
+                $("#block_name").val("");
+            };
+        </script>
+
+        <style>
+            #booking > div.backdrop {
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                width: 100%;
+                height: 100%;
+                background: rgba(255,255,255,0.7);
+                overflow: hidden;
+                z-index: 2000;
+            }
+
+            #booking > div.backdrop > div.popupmsg {
+                position: relative;
+                width: 400px;
+                height: 300px;
+                padding: 20px;
+                margin: 200px auto 0;
+                background: #f7f7f7;
+                color: #000;
+                border: 3px solid #ba0f78;
+                border-radius: 20px;
+                box-shadow: 0 2px 4px 0 rgba(0,0,0,.25);
+            }
+        </style>
+    </head>
+
+    <body id="booking">
+
+        <div class="header">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12 menubar">
+                        <div class="menu-logo"></div>
+
+
+                            <div class="menu-option">
+                                <div id="logoff" class="menu-btn">Log off</div>
+                            </div>
+
+                        <div class="menu-spacer"></div>
+                        <div class="menu-option">
+                            <div class="join-us std-btn" onclick="window.open('https://www.fit4less.ca/coronavirus-notice', '_blank')">Join now</div>
+                        </div>
+                        <div class="menu-option">
+                            <select id="select_language" class="select-language">
+
+                                    <option value="en" selected="selected">English</option>
+
+                            </select>
+                        </div>
+
+                        <div id="mob_trigger" class="mob-trigger">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mob-menu">
+
+                    <div id="logmob" class="mob-option">Log off</div>
+
+                <div class="mob-option" onclick="window.open('https://www.fit4less.ca/coronavirus-notice', '_blank')">Join now</div>
+                <div class="mob-option languages">
+
+                        <span id="en" class="opt-language active">EN</span>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!--[ MODAL DIALOG BOOKING & CANCELLING ]-->
+        <div class="modal" id="modal_booking" tabindex="-1" role="dialog" aria-labelledby="modal_booking_Label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="modal_booking_Label"></h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="dialog-content">
+                            <p id="modal_booking_Text"></p>
+                            <h1 id="choice_club" class="txt-center"></h1>
+                            <h1 id="choice_date" class="txt-center"></h1>
+                            <h1 id="choice_time" class="txt-center"></h1>
+                        </div>
+                        <div id="modal_legaltext">
+
+                            <div class="dialog-legal">
+                                <p>Our Commitment to your Health and Safety</p><p>IF YOU ANSWERED YES TO ANY OF THE FOLLOWING QUESTIONS BELOW, DO NOT BOOK A WORKOUT OR ENTER THE PREMISES. SELF-ISOLATE IMMEDIATELY AND CONTACT YOUR DESIGNATED PUBLIC HEALTH AUTHORITY FOR FURTHER DIRECTION.</p><p><ol><li>Are you experiencing any of the following symptoms?</li><ul><li>Fever above 38 C</li><li>New or worsening cough</li><li>Sore throat</li><li>Runny nose</li><li>Headache</li><li>Shortness of breath</li><li>New onset fatigue</li><li>New onset muscle pain</li><li>Diarrhea</li><li>Loss of taste or smell</li><li>Conjunctivitis</li></ul><li>Are you under the age of 18 and experiencing purple fingers or toes?</li><li>Have you returned from unauthorized interprovincial travel in the last 14 days?</li><li>Have you had close contact within the last 14 days with a confirmed case of COVID-19?</li><li>Have you had close contact within the last 14 days with a person being tested for COVID-19?</li></ol></p><p><b>Special Limitation of Liability During COVID-19</b></p><p>While Fit4Less has taken many precautions to ensure that our clubs are meeting the highest standards of safety and cleanliness, attending a Fit4Less facility may place you in close proximity to other members, attendees and staff and could increase the risk that you contract COVID-19. You acknowledge the contagious nature of COVID-19 and understand the risk of becoming exposed to or infected by COVID-19 at a Fit4Less facility, which may result from the actions, omissions, or negligence of yourself or others, including, but not limited to, Fit4Less employees, members, and attendees (the “Releasees”).</p><p>By attending a Fit4Less facility, you voluntarily agree, on behalf of yourself, your heirs, personal representatives and/or assigns, and any minor child you may enroll to: (a) assume all of the foregoing risks and accept sole responsibility for, and waive any claims for injury, illness, damage, loss, liability, or expense, of any kind (including, but not limited to, personal injury, disability, and death) that may occur to you in connection with  attendance at a Fit4Less facility; and (b) release, indemnify and discharge each of the Releasees  from any and all claims or causes of action (known or unknown) which you may have arising out of or relating thereto, based on the actions, omissions, or negligence of the Releasees, whether a COVID-19 infection occurs before, during, or after attending a Fit4Less facility.</p>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default dialog-buttons-book"   id="dialog_book_yes"   >Yes</button>
+                        <button type="button" class="btn btn-default dialog-buttons-book"   id="dialog_book_no"    >No</button>
+                        <button type="button" class="btn btn-default dialog-buttons-cancel" id="dialog_cancel_yes" >Yes</button>
+                        <button type="button" class="btn btn-default dialog-buttons-cancel" id="dialog_cancel_no"  >No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--[ MODAL DIALOG CLUB SELECTION ]-->
+        <div class="modal" id="modal_clubs" tabindex="-1" role="dialog" aria-labelledby="modal_clubs_Label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="modal_clubs_Label">Select a club</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="dialog-content">
+
+                            <div id="club_020B7D83-84CA-487F-8C9A-C981891EFA68" class="button md-option">London Westmount Mall</div>
+
+                            <div id="club_0B505958-41C3-4ACE-A300-08B8A3AFAF6C" class="button md-option">Mississauga Westwood</div>
+
+                            <div id="club_0E64CA8C-388B-4CD8-B1D7-385369A15E7B" class="button md-option">Langley Crossing</div>
+
+                            <div id="club_12701AF6-13F0-46A9-A2CD-9209AB62F8AC" class="button md-option">Waterloo Northfield</div>
+
+                            <div id="club_13357265-C712-4511-8650-404E726C3A36" class="button md-option">Scarborough Golden Mile</div>
+
+                            <div id="club_14C99AF4-106E-4A02-89DC-BC53F49F93EB" class="button md-option">Etobicoke Valhalla Centre</div>
+
+                            <div id="club_1520A5A9-F157-4778-A0E9-1886F9A95AFA" class="button md-option">Dartmouth Portland</div>
+
+                            <div id="club_1AED1FCE-BF50-41D9-98B2-E8DA425F4549" class="button md-option">North Vancouver Capilano</div>
+
+                            <div id="club_1ED67CA2-4F70-4C1A-9C42-56982AC1A748" class="button md-option">Vancouver West Pender</div>
+
+                            <div id="club_1F9117A9-CFAB-4755-BA76-2DF91A0CEA32" class="button md-option">Orleans Place D Orleans Drive</div>
+
+                            <div id="club_1FBEE51D-6517-4724-930B-390C899F7746" class="button md-option">Oshawa Ritson Road North</div>
+
+                            <div id="club_20577B86-5789-4573-8D1F-6F81CED72302" class="button md-option">Chatham Downtown</div>
+
+                            <div id="club_2174A4EA-2D44-446E-B685-65293CAB1718" class="button md-option">Moncton Main Street</div>
+
+                            <div id="club_234236B7-2A03-45CF-9693-635038A01CFD" class="button md-option">London Argyle</div>
+
+                            <div id="club_252CC7C3-44CF-433F-A3C8-66B0EB6DCE32" class="button md-option">Brampton Shoppers World</div>
+
+                            <div id="club_2532D968-7A31-4958-B9E0-6EFD53D2E1A3" class="button md-option">Stratford</div>
+
+                            <div id="club_27E014A6-2E33-4B28-AC56-722305BB96A0" class="button md-option">North York Finch Avenue</div>
+
+                            <div id="club_2B31A274-170B-417E-A5E9-9DF8DA077331" class="button md-option">Orillia West Ridge</div>
+
+                            <div id="club_2D7B796E-8B8F-4080-96FA-4CDE1D54397F" class="button md-option">Brantford Lynden Road</div>
+
+                            <div id="club_311A457D-FD31-4F9C-9835-06D48AB82172" class="button md-option">Kingston Norwest</div>
+
+                            <div id="club_320207A8-CDAE-4F68-BC91-FCAD95535AA8" class="button md-option">London Oakridge</div>
+
+                            <div id="club_346A2F8E-9CF2-416A-80A4-E45C7A9223FC" class="button md-option">Airdrie Veterans</div>
+
+                            <div id="club_35508664-8C09-4182-A2B2-B213730433F1" class="button md-option">Calgary Pacific Place</div>
+
+                            <div id="club_379C7392-0D53-43D5-8D3F-549964502554" class="button md-option">Fredericton Smythe</div>
+
+                            <div id="club_39D4816B-CFBB-48ED-8A21-4D195C878C5E" class="button md-option">Edmonton Capilano Mall</div>
+
+                            <div id="club_3A9B0E42-1364-4CA8-BB1B-FAA89BB56B01" class="button md-option">Scarborough Bridlewood</div>
+
+                            <div id="club_3E67C6A0-DE2B-496B-B794-19A1EE796E9C" class="button md-option">Windsor Devonshire</div>
+
+                            <div id="club_43ED09EE-4128-4CD7-B0F1-02003617722A" class="button md-option">Ottawa Bridlewood</div>
+
+                            <div id="club_46622A89-5CD9-4A69-BC3B-96E18D401D14" class="button md-option">Whitby Brock Street North</div>
+
+                            <div id="club_4BDAFC50-D2D9-4C04-80E6-169487F6F164" class="button md-option">Edmonton Depot 170</div>
+
+                            <div id="club_4F1991E4-855A-49F6-837C-491D6E3808E4" class="button md-option">London Proudfoot</div>
+
+                            <div id="club_54D52667-03BB-4532-9935-4A553119E14A" class="button md-option">Grimsby South Service Road</div>
+
+                            <div id="club_54E638B1-9C99-468A-850C-7BB6EB706024" class="button md-option">London Huron Heights</div>
+
+                            <div id="club_55346EEC-71F1-4A6E-BD17-5D4EA39E144B" class="button md-option">Ottawa Merivale</div>
+
+                            <div id="club_586227FA-B159-4033-9B4E-01D9F6660F6A" class="button md-option">Brampton Worthington</div>
+
+                            <div id="club_5B914C6F-487A-46FB-8D25-897F0DB110DB" class="button md-option">Surrey Scott Road Centre</div>
+
+                            <div id="club_6409D769-1F2E-4AE3-B050-FBC51CF93474" class="button md-option">Etobicoke Kipling Queensway</div>
+
+                            <div id="club_649730CD-7A00-43C4-B274-861E2D30B1D3" class="button md-option">Windsor Central</div>
+
+                            <div id="club_651F82A9-9041-4EBB-BD3E-F7A089CEA139" class="button md-option">Niagara Falls</div>
+
+                            <div id="club_6682DBAC-A1B6-4BC0-AFBA-65D19F079FED" class="button md-option">North York Centre</div>
+
+                            <div id="club_688A3ACF-D535-468F-9C50-F126EAA4929D" class="button md-option">Milton Mall</div>
+
+                            <div id="club_6CFE79CB-DDEA-472C-A6E4-328718C34E7B" class="button md-option">Scarborough Kennedy Road</div>
+
+                            <div id="club_6D778928-4948-4E59-A35E-75667D88EA5F" class="button md-option">St. Thomas Elgin Mall</div>
+
+                            <div id="club_6F32BB8E-E24B-4233-8250-14756EE3C060" class="button md-option">Orangeville Fairgrounds</div>
+
+                            <div id="club_7222D24D-ABC5-406A-AA4C-6A8F264283E3" class="button md-option">Guelph Edinburgh</div>
+
+                            <div id="club_7AA8B464-4065-49F6-B777-5CC8D6EB9029" class="button md-option">Thunder Bay McIntyre Centre</div>
+
+                            <div id="club_7BDD5124-E236-4696-AF8E-FC82AE4A2DFF" class="button md-option">Markham Cochrane</div>
+
+                            <div id="club_8208061D-78FE-4B3F-8645-97D47DAC86FD" class="button md-option">Winnipeg McPhillips Street</div>
+
+                            <div id="club_829EE1DA-8793-41D9-BFBA-76EDC57404B6" class="button md-option">Kitchener Weber St East</div>
+
+                            <div id="club_8D2E6899-2BF8-40A5-9199-E9226B0C7E71" class="button md-option">East York Town Centre</div>
+
+                            <div id="club_8EC967E2-722F-434C-8E5D-45EEDDAC20C0" class="button md-option">Hamilton Barton at Centennial Pkwy</div>
+
+                            <div id="club_8FC86560-14D5-436D-9147-0515CF753BBD" class="button md-option">Woodbridge Langstaff </div>
+
+                            <div id="club_9447CE32-0C54-44EF-8957-FB35ADA7F744" class="button md-option">Stoney Creek Fiesta Mall</div>
+
+                            <div id="club_94DB5CBD-0604-40B4-A5F7-8B7E412DB5F6" class="button md-option">Bedford Place Mall</div>
+
+                            <div id="club_97198FD1-B99B-4C58-AB58-8EB7360C460A" class="button md-option">Scarborough Lawrence East</div>
+
+                            <div id="club_97502ED5-0812-45D9-8A77-90A689C04D94" class="button md-option">Edmonton Londonderry Mall</div>
+
+                            <div id="club_97B505E9-E6EA-4018-960D-F528467DA786" class="button md-option">Bowmanville Mall</div>
+
+                            <div id="club_9C656DA0-B0CB-4CE1-AA1D-DB97BFF31B7F" class="button md-option">Waterloo Erb Street </div>
+
+                            <div id="club_A313D2AF-5FAF-4407-ABE4-507A9C260D1B" class="button md-option">North Bay Northgate</div>
+
+                            <div id="club_A6561611-6C01-462D-8480-8BF9468BFBA8" class="button md-option">Newmarket Greenlane</div>
+
+                            <div id="club_A671CA40-C0D9-406C-94E4-1B825945AE7A" class="button md-option">Woodstock Bruin Blvd</div>
+
+                            <div id="club_A6C9772C-CBB0-415C-BFFD-471000A76929" class="button md-option">Sarnia Superstore Centre</div>
+
+                            <div id="club_ABD3B2A1-1C68-4158-BB62-8A769EBD11EE" class="button md-option">Sault Ste. Marie Pim Street</div>
+
+                            <div id="club_ADE0245B-A213-4458-9ACC-254091C8B014" class="button md-option">Calgary Sunridge 36th Street</div>
+
+                            <div id="club_B196E74A-AEDF-4CC5-946B-B8575064DF61" class="button md-option">Saskatoon Circle West Plaza</div>
+
+                            <div id="club_B9EF78F6-881E-471B-935D-8B02E587B0C8" class="button md-option">Hamilton Centre</div>
+
+                            <div id="club_BB813797-0FCE-4033-976A-D182F63DE25E" class="button md-option">City Centre Atlantic</div>
+
+                            <div id="club_BBB836B5-E5E1-4F28-8B9C-37A522053083" class="button md-option">Scarborough Milner</div>
+
+                            <div id="club_BDDEEE4D-12A3-462C-99DD-75508621E36E" class="button md-option">Ottawa South Orleans</div>
+
+                            <div id="club_BF7A6B38-9EAE-47B0-AE51-D69721B53A24" class="button md-option">Calgary Macleod Plaza</div>
+
+                            <div id="club_C454BEAE-1662-4DB6-AA14-FAB5024D2DAB" class="button md-option">Nanaimo Rutherford Road</div>
+
+                            <div id="club_C562DEA2-ACC0-4229-9E04-E309174C6A10" class="button md-option">Lethbridge Town Square</div>
+
+                            <div id="club_C7B5DDBC-9229-47C7-8F83-B4B2612482F0" class="button md-option">Lloydminster 44th Street</div>
+
+                            <div id="club_C89E9992-BCA6-48E1-A500-3C5C257A835B" class="button md-option">Barrie Cundles Road</div>
+
+                            <div id="club_CCE52575-EE9D-4D89-A937-48CBB5F21C4F" class="button md-option">Gloucester City Park Drive</div>
+
+                            <div id="club_D12789F0-DA8A-4D56-863D-9C24BC51957C" class="button md-option">Burlington Fairview</div>
+
+                            <div id="club_D25BDB86-305B-4484-B7A4-1BF1C7D011D3" class="button md-option">Cornwall Ninth Street</div>
+
+                            <div id="club_D51314A8-6400-4BAE-B57A-3327EF991317" class="button md-option">Red Deer Parkland</div>
+
+                            <div id="club_D8D73701-4151-4F7E-B61C-46DF7F0D862A" class="button md-option">Sackville Drive</div>
+
+                            <div id="club_DAE2414C-EADB-424C-9563-9ECDBABAA089" class="button md-option">Saint John East</div>
+
+                            <div id="club_DB23008C-EC5C-4567-94C3-786B8AE5A766" class="button md-option">Pitt Meadows</div>
+
+                            <div id="club_DDBD0BB7-0990-49CA-9ACB-1FD362841D72" class="button md-option">Scarborough Morningside</div>
+
+                            <div id="club_DE702840-A0EE-4361-BFE5-A620E8CDB36A" class="button md-option">North York Lawrence Square</div>
+
+                            <div id="club_DF191DD8-CFBF-4E95-B783-5CDDFA5EEE12" class="button md-option">Ottawa Walkley Road</div>
+
+                            <div id="club_DFFEAE1A-DF22-4A2C-9ED4-8DD81A32AA45" class="button md-option">Ottawa River Road</div>
+
+                            <div id="club_E924695F-1491-4926-9546-C42BF3317984" class="button md-option">North York Marketplace</div>
+
+                            <div id="club_ED845FB7-F4BF-4B8F-9255-9BB118CE8C22" class="button md-option">St. Catharines Bunting</div>
+
+                            <div id="club_EE12F504-2ED5-44EA-BA3A-1FCEF8761D0D" class="button md-option">Windsor Ambassador Plaza</div>
+
+                            <div id="club_F13D1AC8-0645-420F-A4F7-350D7EF3EA77" class="button md-option">Mississauga Millcreek</div>
+
+                            <div id="club_F279340C-A2E4-43B0-9FF7-1F38D0D7F96E" class="button md-option">Peterborough Monaghan Road</div>
+
+                            <div id="club_F691D706-EE92-488E-8C15-4D09C1089AEE" class="button md-option">North York Centerpoint Mall</div>
+
+                            <div id="club_F7029432-F4B8-4474-95D3-F580F371F604" class="button md-option">Brampton Trinity Commons</div>
+
+                            <div id="club_FBC6961A-E2DD-49BF-BA5A-16EEA59F9718" class="button md-option">Richmond Blundell</div>
+
+                            <div id="club_FC626241-81A0-4CE2-B3FC-FBB2B4ED6B7B" class="button md-option">Ajax Kingston Harwood</div>
+
+                            <div id="club_FDB97DE4-0169-4953-B6F9-38FB1585760B" class="button md-option">Newmarket Town Centre</div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" id="dialog_club_close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--[ MODAL DIALOG DATE SELECTION ]-->
+        <div class="modal" id="modal_dates" tabindex="-1" role="dialog" aria-labelledby="modal_dates_Label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="modal_dates_Label">Select a date</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="dialog-content">
+
+                                <div id="date_2021-02-22" class="button md-option">
+                                    Monday, 22 February 2021
+                                </div>
+
+                                <div id="date_2021-02-23" class="button md-option">
+                                    Tuesday, 23 February 2021
+                                </div>
+
+                                <div id="date_2021-02-24" class="button md-option">
+                                    Wednesday, 24 February 2021
+                                </div>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" id="dialog_date_close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--[ PAGE CONTENT ]-->
+        <div class="content">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="content-box">
+
+                            <form name="doorPolicyForm" id="doorPolicyForm" action="submit.asp" method="POST">
+                                <input type="hidden" id="action"        name="action"           value="" />
+                                <input type="hidden" id="block_id"      name="block_id"         value="" />
+                                <input type="hidden" id="block_name"    name="block_name"       value="" />
+
+                                <h1>Welcome&nbsp;Anthony Ryan,</h1>
+
+                                <!-- [ BLOCK RESERVATIONS ] -->
+
+                                    <p>You currently have these timeslot(s) reserved.</p>
+                                    <div class="reserved-slots">
+
+                                        <div id="cncl_2bdfaa1b-97ed-4d9f-bf2d-573ef70a9634" class="time-slot" data-slotclub="London Argyle" data-slotdate="Tuesday, 23 February 2021" data-slottime="at 11:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">London Argyle</div>
+                                                <div class="time-slot-data-line">Tuesday, 23 February 2021</div>
+                                                <div class="time-slot-data-line">at 11:00 AM</div>
+                                                <div class="time-slot-data-line">Click to cancel</div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+
+                                <!-- [ BLOCK BOOKING COUNT & MSGS ] -->
+
+                                    <p>You can have a maximum of 2 timeslot reservations.</p>
+
+                                        <p>You have 1 unused reservation slots left over.</p>
+
+                                    <p>&nbsp;</p>
+
+
+                                <!-- [ BLOCK AVAILABILITY ] -->
+
+                                    <h2>Reserve a gym session in club London Argyle on Wednesday, 24 February 2021.</h2>
+
+                                    <div class="available-slots">
+                                        <div id="btn_club_select" class="button dayclub">select club</div>
+
+
+                                            <div id="btn_date_select" class="button dayclub">select day</div>
+
+                                    </div>
+
+                                    <div class="available-slots">
+
+                                        <div id="book_decba69d-a166-4515-bd1e-2e89e68e623a" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 7:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 7:00 AM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_d4fad84f-4d9e-48a2-9bc9-68ba0c7ee5c2" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 8:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 8:00 AM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_4f96a252-5d01-4686-913a-d2627b2e97a8" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 9:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 9:00 AM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_36f51290-299c-4b35-9b93-b886afb05c72" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 10:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 10:00 AM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_7512bf03-bedb-4222-92c1-ce6616e7545c" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 11:00 AM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 11:00 AM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_1e04ab86-87fc-4775-b95b-4af6e0b50eb9" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 12:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 12:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_96f48ebf-454e-4d68-83c3-6d23f5c846b3" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 1:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 1:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_da483624-81bb-4414-8a08-51b74d648247" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 2:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 2:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_346eb734-7ac2-44f9-919d-1a65bc5860f2" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 3:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 3:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_67db3d69-9de1-41a2-9ecb-264199ab546e" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 4:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 4:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_d4f6e415-a37b-4830-bdbd-201387555fc3" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 5:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 5:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_c4348f24-b6b5-44cb-948b-24984bab6327" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 7:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 7:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_5fcedd9a-14ea-41aa-8433-b252a66db578" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 8:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 8:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                        <div id="book_86f1380c-7633-44e0-8cb5-8c8b9f92d2b4" class="time-slot" data-slotclub="London Argyle" data-slotdate="Wednesday, 24 February 2021" data-slottime="at 9:00 PM">
+                                            <div class="time-slot-clock"></div>
+                                            <div class="time-slot-box">
+                                                <div class="time-slot-data-line">Wednesday, 24 February 2021</div>
+                                                <div class="time-slot-data-line">at 9:00 PM</div>
+                                                <div class="time-slot-data-line">Click to reserve</div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+
+                                        <div>
+                                            <p>If a timeslot(s) are not shown, the workout block is currently at capacity and not available. Please check back later!</p>
+                                        </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4">Copyright 2021 Fit4Less. All rights reserved</div>
+                    <div class="col-md-4"><span class="link privacy_url" onclick="window.open('https://www.fit4less.ca/privacy-policy', '_blank')">Privacy</span></div>
+                    <div class="col-md-4"><span class="link contact_url" onclick="window.open('https://www.fit4less.ca/contact', '_blank')">Contact</span></div>
+                </div>
+            </div>
+        </div>
+
+    </body>
+</html>

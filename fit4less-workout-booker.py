@@ -12,15 +12,11 @@ import datetime
 
 
 def scrollTo(driver, element):
-    '''
-    Prerequisite: The element MUST exist on webpage driver
-    '''
-    while True:
-        ActionChains(driver).send_keys(Keys.PAGE_DOWN).perform()
-        try:
-            return element
-        except:
-            continue
+    driver.execute_script("""arguments[0].scrollIntoView({
+            block: 'center',
+            inline: 'center'
+        });""", element)
+    return element
 
 
 class Account():
@@ -31,7 +27,6 @@ class Account():
         self.password = password
         self.email = emailaddress
         self.countbooked = 0
-        self.timesbooked = {}
 
     def getPassword(self):
         return self.password
@@ -51,20 +46,20 @@ class Account():
         password.send_keys(self.getPassword())
 
         # Find login button, click
-        login_button = scrollTo(driver, driver.find_element_by_xpath('/html/body/div[2]/div/div/div/div/form/div[2]/div[1]/div'))
+        login_button = scrollTo(driver, driver.find_element_by_id('loginButton'))
         login_button.click()
 
-        if driver.find_element_by_xpath('/html/body/div[2]/div/div/div/div/h1').text == 'LOG IN FAILED':
-            print("Incorrect credentials, check again")
-            return 0
-        return 1
+        page = driver.find_element_by_tag_name('body').get_attribute("id")
+        if page == 'login':
+            raise Exception("Failed to login")
 
-    def bookTime(self, driver):
-        alltimes_elements = driver.find_elements_by_xpath("(/html/body/div[5]/div/div/div/div/form/div[@class='available-slots'])[2]/div")
+        assert(page == 'booking')
 
+    def bookTime(self, driver, minrangetimegym, maxrangetimegym):
+        alltimes_elements = driver.find_elements_by_css_selector(".available-slots > .time-slot")
         if len(alltimes_elements) == 0:
-            # print("No times available for this date")
-            return 0
+            print("No times available for this date")
+            return
 
         for time in alltimes_elements:
             clock = time.get_attribute("data-slottime")[3::]
@@ -83,44 +78,53 @@ class Account():
                 hour = 0
 
             # print(hour, minute)
-            timegym = datetime.datetime.now().replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
+            timegym = datetime.datetime.now().replace(
+                hour=int(hour),
+                minute=int(minute),
+                second=0,
+                microsecond=0
+            )
             # print(timegym)
             if minrangetimegym <= timegym <= maxrangetimegym:
                 # book this time
                 booktime = scrollTo(driver, driver.find_element_by_id(time_id))
                 booktime.click()  # Click on the specifc time to book, falling in the time domain we want
-                driver.find_element_by_id("dialog_book_yes").click()  # Accept COVID-19 terms of service
-                # print("Booked time for " + clock)
-                return clock
 
-        print()
-        return 0
+                covid_terms = scrollTo(driver, driver.find_element_by_id("dialog_book_yes"))
+                covid_terms.click()
+                print("Booked time for " + clock)
+                # return clock
 
-    def book(self, driver, location, minrangetimegym, maxrangetimegym):
-        # 1) Enter https://www.fit4less.ca/ > 2) Bookworkout
-        if not self.login(driver):
-            return 0
-        selectclub_element = scrollTo(driver, driver.find_element_by_id('btn_club_select'))
-        selectclub_element.click()
-        try:
-            location_element = driver.find_element_by_xpath("//div[contains(text(),'{}')]".format(location))
-            location_element.click()
-        except:
-            print("Incorrect location, try again")
-            return 0
+    def selectGym(self, driver, location):
+        # Desired location is not already selected
+        # "Reserve a gym session in club London Argyle on Monday, 22 February 2021."
+        if location not in driver.find_element_by_tag_name('h2').text:
+            # Select club
+            selectclub_element = scrollTo(driver, driver.find_element_by_id('btn_club_select'))
+            selectclub_element.click()
+            try:
+                location_element = driver.find_element_by_xpath("//div[contains(text(),'{}')]".format(location))
+                location_element.click()
+            except selenium.common.exceptions.NoSuchElementException:
+                raise Exception("Incorrect location")
 
+    def book(self, driver, minrangetimegym, maxrangetimegym):
         # 5) Select Day: Ex: Tomorrow. Check todays date, select tomorrows date (Maximum of 3 days in advance)
         # driver.find_element_by_id('btn_date_select').click()
         today = datetime.date.today()
         tomorrow = today + datetime.timedelta(days=1)
         dayaftertomorrow = today + datetime.timedelta(days=2)
-        days = [dayaftertomorrow.strftime("%Y-%m-%d"), tomorrow.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")]  # Book 3 days in advance
+        days = [
+            dayaftertomorrow.strftime("%Y-%m-%d"),
+            tomorrow.strftime("%Y-%m-%d"),
+            today.strftime("%Y-%m-%d")
+        ]
 
         for i in days:
             # print("-------------")
             try:
                 countbooked = driver.find_element_by_xpath("/html/body/div[5]/div/div/div/div/form/p[3]")
-            except:
+            except selenium.common.exceptions.NoSuchElementException:
                 print("Maximum Booked. Booked {} times".format(self.countbooked))
                 return 1
             self.countbooked = countbooked.text[9]
@@ -131,14 +135,9 @@ class Account():
             # print("Looking at times for", i)
             driver.find_element_by_id(day_element_name).click()
 
-            booked = self.bookTime(driver)
-            if booked != 0:
-                self.timesbooked[i] = booked
+            self.bookTime(driver, minrangetimegym, maxrangetimegym)
 
     def getReserved(self, driver):
-        if not self.login(driver):
-            print("Failed to login")
-            return
         alltimes_elements = driver.find_elements_by_css_selector(".reserved-slots > .time-slot")
         for i in alltimes_elements:
             print('-', i.get_attribute('data-slotdate'), i.get_attribute('data-slotclub'), i.get_attribute('data-slottime'))
@@ -159,12 +158,42 @@ if __name__ == '__main__':
         location = sys.argv[4].replace('-', ' ')
         start_time = sys.argv[5]
         end_time = sys.argv[6]
-        minrangetimegym = datetime.datetime.now().replace(hour=int(start_time[:start_time.find(":")],), minute=int(start_time[start_time.find(":")+1:]))
-        maxrangetimegym = datetime.datetime.now().replace(hour=int(end_time[:end_time.find(":")]), minute=int(end_time[end_time.find(":")+1:]))
-        if person.book(driver, location, minrangetimegym, maxrangetimegym) != 0:
-            person.getReserved(driver)
-    elif function == 'reserved':
+        minrangetimegym = datetime.datetime.now().replace(
+            hour=int(start_time[:start_time.find(":")],),
+            minute=int(start_time[start_time.find(":")+1:])
+        )
+        maxrangetimegym = datetime.datetime.now().replace(
+            hour=int(end_time[:end_time.find(":")]),
+            minute=int(end_time[end_time.find(":")+1:])
+        )
+
+        person.login(driver)
+        person.selectGym(driver, location)
+        person.book(driver, minrangetimegym, maxrangetimegym)
         person.getReserved(driver)
+    elif function == 'reserved':
+        person.login(driver)
+        person.getReserved(driver)
+
+    elif function == 'test-reserved':
+        driver.get('file://%s/tests/booking.html' % os.path.dirname(__file__))
+        person.getReserved(driver)
+
+    elif function == 'test-book':
+        location = sys.argv[4].replace('-', ' ')
+        start_time = sys.argv[5]
+        end_time = sys.argv[6]
+        minrangetimegym = datetime.datetime.now().replace(
+            hour=int(start_time[:start_time.find(":")],),
+            minute=int(start_time[start_time.find(":")+1:])
+        )
+        maxrangetimegym = datetime.datetime.now().replace(
+            hour=int(end_time[:end_time.find(":")]),
+            minute=int(end_time[end_time.find(":")+1:])
+        )
+
+        driver.get('file://%s/tests/booking.html' % os.path.dirname(__file__))
+        person.bookTime(driver, minrangetimegym, maxrangetimegym)
     else:
         print("Unknown command")
-    driver.quit()
+    # driver.quit()
