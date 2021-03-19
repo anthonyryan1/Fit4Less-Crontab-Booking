@@ -113,9 +113,11 @@ class Account():
         # driver.find_element_by_id('btn_date_select').click()
         today = datetime.date.today()
         tomorrow = today + datetime.timedelta(days=1)
-        dayaftertomorrow = today + datetime.timedelta(days=2)
+        daythree = today + datetime.timedelta(days=2)
+        dayfour = today + datetime.timedelta(days=3)
         days = [
-            dayaftertomorrow.strftime("%Y-%m-%d"),
+            dayfour.strftime("%Y-%m-%d"),
+            daythree.strftime("%Y-%m-%d"),
             tomorrow.strftime("%Y-%m-%d"),
             today.strftime("%Y-%m-%d")
         ]
@@ -174,7 +176,7 @@ if __name__ == '__main__':
     elif function == 'reserved':
         person.login(driver)
         person.getReserved(driver)
-
+        driver.quit()
     elif function == 'test-reserved':
         driver.get('file://%s/tests/booking.html' % os.path.dirname(__file__))
         person.getReserved(driver)
@@ -191,9 +193,11 @@ if __name__ == '__main__':
             hour=int(end_time[:end_time.find(":")]),
             minute=int(end_time[end_time.find(":")+1:])
         )
+        # Real login
+        person.login(driver)
 
+        # Test booking
         driver.get('file://%s/tests/booking.html' % os.path.dirname(__file__))
         person.bookTime(driver, minrangetimegym, maxrangetimegym)
     else:
         print("Unknown command")
-    # driver.quit()
